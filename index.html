@@ -617,49 +617,63 @@ scroller.addEventListener('mousemove', e=>{
   const el = document.getElementById('hscroll');
   if(!el) return;
 
-  const SPEED = 1.5;          // скорость (пикс/кадр). 1.0-2.0 — норма
-  const EDGE_PAUSE = 800;     // пауза у края перед разворотом (мс)
+  const SPEED = 1.2;         // пикс за тик (0.8 = медленно, 2.5 = быстро)
+  const TICK = 16;           // мс между тиками (~60 кадров/сек)
+  const EDGE_PAUSE = 900;    // пауза у края, мс
 
   let direction = 1;
   let paused = false;
-  let resumeTimer = null;
+  let pauseTimer = null;
+  let visible = false;
+  let intervalId = null;
 
-  function maxScroll(){
-    return el.scrollWidth - el.clientWidth;
-  }
+  function maxScroll(){ return el.scrollWidth - el.clientWidth; }
 
   function pauseBriefly(ms){
     paused = true;
-    clearTimeout(resumeTimer);
-    resumeTimer = setTimeout(()=>{ paused = false; }, ms);
+    clearTimeout(pauseTimer);
+    pauseTimer = setTimeout(function(){ paused = false; }, ms);
   }
 
-  function step(){
-    if(!paused){
-      const max = maxScroll();
-      if(max > 0){
-        el.scrollLeft += SPEED * direction;
+  function tick(){
+    if(paused || !visible) return;
+    const max = maxScroll();
+    if(max <= 0) return;
 
-        if(el.scrollLeft >= max - 1){
-          el.scrollLeft = max;
-          direction = -1;
-          pauseBriefly(EDGE_PAUSE);
-        } else if(el.scrollLeft <= 1){
-          el.scrollLeft = 0;
-          direction = 1;
-          pauseBriefly(EDGE_PAUSE);
-        }
-      }
+    el.scrollLeft += SPEED * direction;
+
+    if(el.scrollLeft >= max - 1){
+      el.scrollLeft = max;
+      direction = -1;
+      pauseBriefly(EDGE_PAUSE);
+    } else if(el.scrollLeft <= 1){
+      el.scrollLeft = 0;
+      direction = 1;
+      pauseBriefly(EDGE_PAUSE);
     }
-    requestAnimationFrame(step);
   }
 
-  // пауза, когда пользователь сам тащит галерею
-  el.addEventListener('mousedown', ()=> pauseBriefly(2000));
-  el.addEventListener('touchstart', ()=> pauseBriefly(2000), {passive:true});
-  el.addEventListener('wheel', ()=> pauseBriefly(2000), {passive:true});
+  // Запускаем прокрутку, когда блок в зоне видимости
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        visible = e.isIntersecting;
+        if(visible && !intervalId){
+          intervalId = setInterval(tick, TICK);
+        }
+      });
+    }, { threshold: 0.15 });
+    io.observe(el);
+  } else {
+    // На всякий случай — если браузер старый
+    visible = true;
+    intervalId = setInterval(tick, TICK);
+  }
 
-  requestAnimationFrame(step);
+  // Пауза при ручном взаимодействии
+  el.addEventListener('mousedown', function(){ pauseBriefly(2000); });
+  el.addEventListener('touchstart', function(){ pauseBriefly(2000); }, {passive:true});
+  el.addEventListener('wheel', function(){ pauseBriefly(2000); }, {passive:true});
 })();
 
 /* ===================== ЛАЙТБОКС ===================== */
