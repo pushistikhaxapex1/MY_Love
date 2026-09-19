@@ -652,7 +652,7 @@ scroller.addEventListener('mousemove', e=>{
     resumeTimer = setTimeout(()=>{ paused = false; }, RESUME_DELAY);
   }
 
-  el.addEventListener('mouseenter', ()=>{ isHovering = true; });
+  // el.addEventListener('mouseenter', ()=>{ isHovering = true; });
   el.addEventListener('mouseleave', ()=>{ isHovering = false; });
   el.addEventListener('mousedown', ()=>{ isDragging = true; pauseNow(); });
   window.addEventListener('mouseup', ()=>{ if(isDragging){ isDragging = false; resumeSoon(); } });
@@ -662,8 +662,7 @@ scroller.addEventListener('mousemove', e=>{
   el.addEventListener('touchcancel', ()=>{ isTouching = false; resumeSoon(); }, {passive:true});
   el.addEventListener('wheel', ()=>{ pauseNow(); resumeSoon(); }, {passive:true});
 
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(!reduce) rafId = requestAnimationFrame(step);
+  rafId = requestAnimationFrame(step);
 })();
 
 /* ===================== ЛАЙТБОКС ===================== */
